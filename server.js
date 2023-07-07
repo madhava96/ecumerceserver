@@ -4,6 +4,8 @@ const sql = require('mysql2')
 const cors = require('cors')
 const jwt = require('jsonwebtoken');
 const otpGenerator = require('otp-generator')
+const dotenv = require('dotenv');
+var Upgrade = require('./upgrade.js');
 
 const textflow = require("textflow.js");
 textflow.useKey("7PdwesNHsgFK5vgvlsoMW5hfaB01FiJb0ThWd28rvDAzZmwIjVsidp7z6CwXLg41");
@@ -13,11 +15,19 @@ textflow.useKey("7PdwesNHsgFK5vgvlsoMW5hfaB01FiJb0ThWd28rvDAzZmwIjVsidp7z6CwXLg4
 const app = express()
 app.use(cors())
 app.use(express.json())
+app.use('/upgrade',Upgrade)
+
+// const db = sql.createConnection({
+//     host:'192.168.30.75',
+//     user:'user',
+//     password:'pass',
+//     database:'ecart'
+// })
 
 const db = sql.createConnection({
-    host:'192.168.30.75',
-    user:'user',
-    password:'pass',
+    host:'localhost',
+    user:'root',
+    password:'admin',
     database:'ecart'
 })
 
@@ -78,13 +88,14 @@ app.post('/login',async(req,res) =>{
 
 app.post('/user',(req,res)=>{
     console.log(req.body)
-    const q='select `username`,`mobile` from users where BINARY username=(?) or mobile=(?)'
+    const q='select `username`,`mobile`,`email` from users where id=(?)'
     const values=[
-        req.body.username,
-        req.body.mobile
+        req.body.userId,
+        
     ]
     db.query(q,[values],(err,result)=>{
         if(err) return res.json(err);
+        console.log('user',result)
         return res.json(result)
         })
 })
@@ -247,13 +258,15 @@ app.post('/addAddress',(req,res)=>{
 app.post('/getPrice',(req,res)=>{
     //console.log(req.body)
     q = 'select id, quantity, (price*quantity) as total, userId from cartlist inner join products on id = productId where userId =(?)'
+    
     db.query(q,[req.body.userId],(err,result)=>{
         let Total_Price = 0
         const Price = result.map(itme => Total_Price=Total_Price+itme.total)
-        //console.log(Price)
-        //res.json(Total_Price)
         res.json({'total_price':Total_Price,'data':result})
+        //res.json(Total_Price)
+        
     })
+   
 })
 
 app.post('/addPurches',(req,res)=>{
@@ -320,4 +333,3 @@ app.listen(8081, ()=>{
     console.log(`app listening at http://localhost:8081`)
 
 });
-
